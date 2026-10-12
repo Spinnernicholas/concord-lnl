@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Concord Parcel Explorer</title>
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="style.css">
+  <script defer src="vendor/leaflet/leaflet.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <header>
+      <div class="eyebrow">CITY GIS / LOCAL DATA</div>
+      <h1>Concord Parcel Explorer</h1>
+      <p>Explore parcel boundaries, addresses, and property records.</p>
+    </header>
+    <form id="search-form" role="search">
+      <label for="search">Find a parcel</label>
+      <div class="search-row">
+        <input id="search" type="search" placeholder="APN or street address" autocomplete="off" disabled>
+        <button id="search-button" type="submit" disabled>Search</button>
+      </div>
+    </form>
+    <div id="search-status" role="status" aria-live="polite"></div>
+    <ul id="results" aria-label="Search results"></ul>
+    <section id="details" aria-label="Selected parcel">
+      <div class="empty-state">
+        <span class="parcel-icon" aria-hidden="true">&#9633;</span>
+        <h2>A closer look at your city</h2>
+        <p>Zoom in to see parcel boundaries. Select a parcel or search an APN or address to view its records.</p>
+      </div>
+    </section>
+    <footer>
+      <span id="dataset-status">Loading dataset...</span>
+      <p>Public City of Concord GIS. Includes the entire downloaded parcel layer, not only city-limit parcels. Not a legal survey or certified assessment roll.</p>
+      <p>Basemap tiles require internet access. Parcel records are served by this static site.</p>
+    </footer>
+  </aside>
+  <main class="map-panel" aria-label="Interactive parcel map">
+    <div id="map"></div>
+    <div class="map-toolbar">
+      <button id="reset-view" type="button">Concord overview</button>
+      <label><input id="show-parcels" type="checkbox" checked> Parcel boundaries</label>
+    </div>
+    <div id="map-status" role="status" aria-live="polite">Loading map...</div>
+    <div class="legend"><span></span> Parcel <span class="selected"></span> Selected</div>
+  </main>
+</body>
+</html>
