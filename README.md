@@ -342,3 +342,9 @@ are processed, `matching_parcels.csv` is a **partial answer**, not the full requ
 Even successful processing covers only currently discoverable APNs and portal-linked
 years. For a complete historic roll, request retired parcel records and assessment
 levy files from the city/county.
+
+## Separate research subproject
+
+The [Proposition 218 benefit-distance meta-analysis](meta-analysis/README.md) is a
+separate research subproject in this repository. It is independent of the parcel
+map and assessment collection tools described above.
