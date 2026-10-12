@@ -32,6 +32,7 @@ let selectedToken = 0;
 let viewToken = 0;
 let searchToken = 0;
 let selectionDownload;
+let lastClickLatLng = null;
 
 let statusTimer;
 function status(element, message, error = false) {
@@ -134,10 +135,15 @@ function setupSheet() {
 }
 
 async function fetchJson(path, cache, key) {
-  if (cache?.has(key)) return cache.get(key);
+  if (cache?.has(key)) {
+    const cached = cache.get(key);
+    return cached instanceof Promise ? await cached : cached;
+  }
   const pending = fetch(path).then(async (response) => {
     if (!response.ok) throw new Error(`${path}: HTTP ${response.status}`);
-    return response.json();
+    const data = await response.json();
+    if (cache) cache.set(key, data);
+    return data;
   });
   if (cache) cache.set(key, pending);
   try {
@@ -181,6 +187,165 @@ function swatch(color, dashed = false) {
 function numberField(value) {
   const n = typeof value === "number" ? value : parseFloat(String(value ?? "").replace(/,/g, ""));
   return Number.isFinite(n) ? n : null;
+}
+
+// Geometry helpers for stacking and hit-testing parcels
+function ringArea(ring) {
+  if (!ring || ring.length < 3) return 0;
+  let a = 0;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    a += (ring[j][0] * ring[i][1]) - (ring[i][0] * ring[j][1]);
+  }
+  return Math.abs(a) / 2;
+}
+
+function featureArea(feature) {
+  const geom = feature?.geometry;
+  if (!geom) return 0;
+  if (geom.type === "Polygon") return ringArea(geom.coordinates[0]);
+  if (geom.type === "MultiPolygon") {
+    let sum = 0;
+    for (const poly of geom.coordinates) sum += ringArea(poly[0]);
+    return sum;
+  }
+  return 0;
+}
+
+function featureBBox(feature) {
+  if (feature._bbox) return feature._bbox;
+  const geom = feature?.geometry;
+  if (!geom) return [0, 0, 0, 0];
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  const update = (ring) => {
+    for (const [x, y] of ring) {
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+  };
+  if (geom.type === "Polygon") update(geom.coordinates[0]);
+  else if (geom.type === "MultiPolygon") for (const poly of geom.coordinates) update(poly[0]);
+  feature._bbox = [minX, minY, maxX, maxY];
+  return feature._bbox;
+}
+
+function pointInRing(x, y, ring) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0], yi = ring[i][1];
+    const xj = ring[j][0], yj = ring[j][1];
+    const intersect = ((yi > y) !== (yj > y))
+      && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+function pointInGeometry(pt, geom) {
+  if (!geom) return false;
+  const [x, y] = pt;
+  if (geom.type === "Polygon") {
+    if (!pointInRing(x, y, geom.coordinates[0])) return false;
+    for (let k = 1; k < geom.coordinates.length; k++) {
+      if (pointInRing(x, y, geom.coordinates[k])) return false;
+    }
+    return true;
+  }
+  if (geom.type === "MultiPolygon") {
+    for (const poly of geom.coordinates) {
+      if (pointInRing(x, y, poly[0])) {
+        let inHole = false;
+        for (let k = 1; k < poly.length; k++) {
+          if (pointInRing(x, y, poly[k])) { inHole = true; break; }
+        }
+        if (!inHole) return true;
+      }
+    }
+  }
+  return false;
+}
+
+function representativePoint(geom) {
+  if (!geom) return null;
+  const ring = geom.type === "Polygon" ? geom.coordinates[0] : geom.coordinates[0]?.[0];
+  if (!ring || ring.length < 3) return null;
+  const n = ring.length - 1;
+  let sx = 0, sy = 0;
+  for (let i = 0; i < n; i++) {
+    sx += ring[i][0];
+    sy += ring[i][1];
+  }
+  const pt = [sx / n, sy / n];
+  if (pointInGeometry(pt, geom)) return pt;
+  for (let i = 0; i < n; i++) {
+    const testPt = [ring[i][0] * 0.2 + pt[0] * 0.8, ring[i][1] * 0.2 + pt[1] * 0.8];
+    if (pointInGeometry(testPt, geom)) return testPt;
+  }
+  return ring[0];
+}
+
+function prepareTileFeatures(data, tileId) {
+  if (data._prepared) return;
+  data._prepared = true;
+  for (const feature of data.features) {
+    feature._tileId = tileId;
+    feature._area = featureArea(feature);
+    feature._bbox = featureBBox(feature);
+  }
+  // Sort descending by area so largest (common areas) are drawn first,
+  // and smallest (individual units) sit on top in SVG DOM order.
+  data.features.sort((a, b) => b._area - a._area);
+}
+
+function findParcelsAtPoint(pt, tileHint) {
+  const [x, y] = pt;
+  const matches = [];
+  const seenApns = new Set();
+  const tileIds = tileHint && tileCache.has(tileHint)
+    ? [tileHint, ...Array.from(tileCache.keys()).filter((id) => id !== tileHint)]
+    : Array.from(tileCache.keys());
+
+  for (const tileId of tileIds) {
+    const data = tileCache.get(tileId);
+    if (!data?.features) continue;
+    if (!data._prepared) prepareTileFeatures(data, tileId);
+    for (const feature of data.features) {
+      const apn = apnDigits(feature.properties?.APN);
+      if (seenApns.has(apn)) continue;
+      const [minX, minY, maxX, maxY] = feature._bbox || featureBBox(feature);
+      if (x < minX || x > maxX || y < minY || y > maxY) continue;
+      if (pointInGeometry(pt, feature.geometry)) {
+        seenApns.add(apn);
+        matches.push({ feature, tileId });
+      }
+    }
+  }
+  // Smallest area first so individual condo units come before common area
+  matches.sort((a, b) => (a.feature._area || 0) - (b.feature._area || 0));
+  return matches;
+}
+
+function onParcelClick(event, feature, tileId) {
+  const pt = [event.latlng.lng, event.latlng.lat];
+  const stacked = findParcelsAtPoint(pt, tileId);
+  const list = stacked.length > 0 ? stacked : [{ feature, tileId }];
+
+  const curIdx = list.findIndex((item) => apnDigits(item.feature.properties?.APN) === selectedApn);
+  const isRepeatClick = list.length > 1 && curIdx >= 0 && lastClickLatLng && event.latlng.distanceTo(lastClickLatLng) < 15;
+
+  let target;
+  if (isRepeatClick) {
+    target = list[(curIdx + 1) % list.length];
+  } else {
+    // If the clicked feature is the common area (large area) but smaller units exist here,
+    // prefer the smallest unit rather than the common area.
+    const clickedMatch = list.find((item) => item.feature.properties?.OBJECTID === feature.properties?.OBJECTID);
+    target = (clickedMatch && clickedMatch === list[list.length - 1] && list.length > 1) ? list[0] : (clickedMatch || list[0]);
+  }
+
+  lastClickLatLng = event.latlng;
+  selectParcel(target.feature, target.tileId, target.feature.properties?.OBJECTID, list);
 }
 
 // ---------- Map ----------
@@ -252,10 +417,11 @@ async function updateView() {
         if (visibleLayers.has(tile.id)) continue;
         const data = await fetchJson(`data/tiles/${tile.id}.geojson`, tileCache, tile.id);
         if (token !== viewToken) return;
+        prepareTileFeatures(data, tile.id);
         const layer = L.geoJSON(data, {
           style: parcelStyle,
           onEachFeature: (feature, polygon) => {
-            polygon.on("click", () => selectParcel(feature, tile.id));
+            polygon.on("click", (e) => onParcelClick(e, feature, tile.id));
             polygon.bindTooltip(() => parcelTooltip(feature), { sticky: true });
           },
         }).addTo(map);
@@ -282,6 +448,18 @@ function parcelTooltip(feature) {
     const line = el("span", null, "tip-line");
     line.append(swatch(districtById.get(entry.d).color), document.createTextNode(`${districtById.get(entry.d).short}: ${money.format(entry.a)}`));
     wrap.append(line);
+  }
+  if (feature._stackedCount === undefined && feature.geometry) {
+    const rep = representativePoint(feature.geometry);
+    if (rep) {
+      const hits = findParcelsAtPoint(rep, feature._tileId);
+      feature._stackedCount = hits.length;
+    } else {
+      feature._stackedCount = 1;
+    }
+  }
+  if (feature._stackedCount > 1) {
+    wrap.append(el("span", `Stacked property (${feature._stackedCount} units/areas · click to cycle)`, "tip-stacked"));
   }
   return wrap;
 }
@@ -496,7 +674,7 @@ function renderEmptyDetails() {
   byId("details").replaceChildren(box);
 }
 
-function renderDetails(attributes, feature) {
+function renderDetails(attributes, feature, stackedList = null) {
   const details = byId("details");
   details.replaceChildren();
   const entries = rollEntries(attributes.APN);
@@ -548,6 +726,44 @@ function renderDetails(attributes, feature) {
   quick.append(quickText, quickOpen);
   details.querySelector(".badge").before(quick);
   details.append(card);
+
+  if (stackedList && stackedList.length > 1) {
+    const box = el("section", null, "stacked-box");
+    box.append(el("h3", `${stackedList.length} properties at this location`));
+    box.append(el("p", "Units on different floors or common areas share this footprint. Click one to switch:", "stacked-hint"));
+    const list = el("div", null, "stacked-list");
+    for (const item of stackedList) {
+      const p = item.feature.properties;
+      const apn = apnDigits(p.APN);
+      const isCur = apn === selectedApn;
+      const btn = el("button", null, `stacked-item${isCur ? " active" : ""}`);
+      btn.type = "button";
+      if (isCur) btn.setAttribute("aria-current", "true");
+
+      const addr = cleanAddress(p.full_address_display) || "No street address recorded";
+      const useDesc = p.USE_DESC?.trim() || "";
+      const isCommon = useDesc.toLowerCase().includes("common") || !addr.match(/\d/);
+
+      const titleRow = el("div", null, "stacked-main");
+      titleRow.append(el("strong", addr));
+      for (const entry of rollEntries(p.APN)) {
+        titleRow.append(swatch(districtById.get(entry.d).color));
+      }
+
+      const subRow = el("div", null, "stacked-sub");
+      subRow.append(el("span", `APN ${apnDisplay(apn)}`));
+      subRow.append(el("span", isCommon ? "Common area" : "Unit", "stacked-tag"));
+      if (isCur) subRow.append(el("span", "Viewing", "stacked-active-tag"));
+
+      btn.append(titleRow, subRow);
+      btn.addEventListener("click", () => {
+        selectParcel(item.feature, item.tileId, item.feature.properties?.OBJECTID, stackedList);
+      });
+      list.append(btn);
+    }
+    box.append(list);
+    details.append(box);
+  }
 
   const inputs = el("dl", null, "inputs");
   const code = attributes.USE_CODE;
@@ -607,6 +823,7 @@ function clearSelection() {
   if (selectedLayer) map.removeLayer(selectedLayer);
   selectedLayer = null;
   selectedApn = null;
+  lastClickLatLng = null;
   setHash("");
   renderEmptyDetails();
 }
@@ -620,7 +837,7 @@ function keepSelectionVisible() {
   if (point.y > visibleBottom - 30 || point.y < 60) map.panBy([0, point.y - (visibleBottom + 50) / 2]);
 }
 
-async function selectParcel(feature, tile, id = feature?.properties.OBJECTID) {
+async function selectParcel(feature, tile, id = feature?.properties?.OBJECTID, stackedList = null) {
   const token = ++selectedToken;
   if (selectedLayer) map.removeLayer(selectedLayer);
   selectedLayer = null;
@@ -635,7 +852,16 @@ async function selectParcel(feature, tile, id = feature?.properties.OBJECTID) {
     if (!attributes) throw new Error(`Object ID ${id} is missing from the attribute file`);
     selectedApn = apnDigits(attributes.APN);
     if (selectedApn) setHash(`apn=${selectedApn}`);
-    renderDetails(attributes, feature);
+
+    if (!stackedList && feature?.geometry) {
+      const rep = representativePoint(feature.geometry);
+      if (rep) {
+        const found = findParcelsAtPoint(rep, tile);
+        if (found.length > 1) stackedList = found;
+      }
+    }
+
+    renderDetails(attributes, feature, stackedList);
     if (isMobile()) {
       if (sheetState === "collapsed") setSheet("half");
       byId("details").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -660,6 +886,7 @@ async function chooseResult(row) {
     }
     const data = await fetchJson(`data/tiles/${row.tile}.geojson`, tileCache, row.tile);
     if (token !== searchToken) return;
+    prepareTileFeatures(data, row.tile);
     const feature = data.features.find((item) => item.properties.OBJECTID === row.id);
     if (!feature) throw new Error(`Object ID ${row.id} is missing from the geometry file`);
     if (isMobile()) {
