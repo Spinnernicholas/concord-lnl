@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Concord Assessment Calculators</title>
+  <link rel="stylesheet" href="assessments.css">
+  <script defer src="assessments.js"></script>
+</head>
+<body>
+  <header class="page-header">
+    <div class="wrap">
+      <div class="eyebrow">CITY OF CONCORD / FY 2026-27</div>
+      <h1>Special Assessment Calculators</h1>
+      <p>Some Concord property owners pay a yearly fee, called a special assessment, for local landscaping and street lights. Each of the four districts below uses its own formula. Enter facts about a property to see how its fee is figured.</p>
+      <nav aria-label="Districts">
+        <a href="#pine-hollow">Pine Hollow</a>
+        <a href="#district-3">District No. 3</a>
+        <a href="#downtown">Downtown</a>
+        <a href="#citywide">Citywide Street Lighting</a>
+        <a class="back" href="index.html">&larr; Parcel map</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="intro">
+      <div class="how-to">
+        <h2>How to read the formulas</h2>
+        <p>Hover over or tap any part of a formula to see what it means. A dot (&middot;) or &times; means multiply.</p>
+        <ul class="key">
+          <li><span class="swatch k-input">s</span> Facts about the property that you enter</li>
+          <li><span class="swatch k-const">r</span> Constants the city set for this year (you can change them)</li>
+          <li><span class="swatch k-calc">A</span> Values the calculator works out</li>
+        </ul>
+      </div>
+      <p class="notice">These are estimates. The county may round amounts a little differently. The official assessment roll shows the exact charge for each property.</p>
+    </div>
+
+    <!-- 1. Pine Hollow -->
+    <section class="district" id="pine-hollow" aria-labelledby="ph-title">
+      <div class="district-head">
+        <span class="num">1</span>
+        <div>
+          <h2 id="ph-title">Pine Hollow Estates Landscape and Lighting Maintenance District</h2>
+          <p>Each home pays a share of the district's yearly cost. The share depends on the home's original size, so a bigger home pays more. 401 of the 425 properties pay. Open space and utility land do not.</p>
+        </div>
+      </div>
+      <div class="calc">
+        <form class="inputs" onsubmit="return false">
+          <h3>Your property</h3>
+          <label>Home's original size <span class="sym" data-sym="ph.s"></span>
+            <span class="field"><input id="ph-s" type="number" min="0" step="1" value="2000"><span class="unit">sq ft</span></span>
+          </label>
+          <small>Use the floor area when the home was first built. Rooms added later do not count.</small>
+        </form>
+        <div class="formulas">
+          <h3>Formula</h3>
+          <div id="ph-general" class="formula"></div>
+          <h3>Constants</h3>
+          <div id="ph-constants" class="constants"></div>
+          <h3>With your values</h3>
+          <div id="ph-sub" class="formula live"></div>
+          <div id="ph-result" class="result"></div>
+          <details class="aside">
+            <summary>Why not just use the published rate?</summary>
+            <p>The city's report prints a rounded rate. Using it gives almost the same answer, but it can be off by a few cents:</p>
+            <div id="ph-check" class="formula"></div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. District No. 3 -->
+    <section class="district" id="district-3" aria-labelledby="d3-title">
+      <div class="district-head">
+        <span class="num">2</span>
+        <div>
+          <h2 id="d3-title">Landscaping and Lighting Maintenance District No. 3</h2>
+          <p>This district has four separate areas, called zones. Each zone has its own rate. Right now, Valley Terrace and Balhan Terrace pay $0 because state tax money covers their street light costs.</p>
+        </div>
+      </div>
+      <div class="calc">
+        <form class="inputs" onsubmit="return false">
+          <h3>Your property</h3>
+          <label>Zone
+            <select id="d3-zone">
+              <option value="K">Kirkwood</option>
+              <option value="Y">Ygnacio Woods Unit II</option>
+              <option value="V">Valley Terrace</option>
+              <option value="B">Balhan Terrace</option>
+              <option value="">Not in the district</option>
+            </select>
+          </label>
+          <label>Equivalent dwelling units <span class="sym" data-sym="d3.edu"></span>
+            <span class="field"><input id="d3-edu" type="number" min="0" step="0.01" value="1"><span class="unit">EDU</span></span>
+          </label>
+          <small>Only used in Ygnacio Woods. A single-family home counts as 1.</small>
+          <label>Homes on the property <span class="sym" data-sym="d3.u"></span>
+            <span class="field"><input id="d3-u" type="number" min="0" step="1" value="2"><span class="unit">homes</span></span>
+          </label>
+          <small>Only used in Balhan Terrace.</small>
+        </form>
+        <div class="formulas">
+          <h3>Formula</h3>
+          <div id="d3-general" class="formula"></div>
+          <p class="where">Each zone check equals 1 for the property's own zone and 0 for the others. Multiplying by 0 removes a zone's charge, so only one rate counts.</p>
+          <h3>Constants</h3>
+          <div id="d3-constants" class="constants"></div>
+          <h3>With your values</h3>
+          <div id="d3-sub" class="formula live"></div>
+          <div id="d3-result" class="result"></div>
+          <details class="aside">
+            <summary>If Balhan Terrace charged a fee again</summary>
+            <p>The zone's total cost would be split by the number of homes. A property with more homes would pay a bigger share:</p>
+            <div id="d3-balhan" class="formula"></div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Downtown -->
+    <section class="district" id="downtown" aria-labelledby="dt-title">
+      <div class="district-head">
+        <span class="num">3</span>
+        <div>
+          <h2 id="dt-title">Downtown Landscape Maintenance District</h2>
+          <p>Downtown has four benefit zones, and they can overlap. A property pays a charge for each zone it is in, and the charges are added together. Depending on the zone, a charge is based on lot size, number of homes, or frontage (the length of the property's edge along the street).</p>
+        </div>
+      </div>
+      <div class="calc">
+        <form class="inputs" onsubmit="return false">
+          <h3>Your property</h3>
+          <label>Lot size <span class="sym" data-sym="dt.P"></span>
+            <span class="field"><input id="dt-P" type="number" min="0" step="1" value="5000"><span class="unit">sq ft</span></span>
+          </label>
+
+          <fieldset>
+            <legend><label class="check-label"><input id="dt-IP" type="checkbox" checked> Todos Santos Plaza zone</label></legend>
+            <label class="check-label"><input id="dt-R" type="checkbox"> The property has homes on it</label>
+            <label>Homes on the property <span class="sym" data-sym="dt.U"></span>
+              <span class="field"><input id="dt-U" type="number" min="0" step="1" value="1"><span class="unit">homes</span></span>
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend><label class="check-label"><input id="dt-IS" type="checkbox" checked> Streetscape zone</label></legend>
+            <label>Street frontage <span class="sym" data-sym="dt.FS"></span>
+              <span class="field"><input id="dt-FS" type="number" min="0" step="0.1" value="50"><span class="unit">ft</span></span>
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend><label class="check-label"><input id="dt-IC" type="checkbox"> Collector Street Median zone</label></legend>
+            <label>Frontage facing the median <span class="sym" data-sym="dt.FC"></span>
+              <span class="field"><input id="dt-FC" type="number" min="0" step="0.1" value="0"><span class="unit">ft</span></span>
+            </label>
+            <small>Use 0 if the property does not face a landscaped median on a collector street.</small>
+          </fieldset>
+
+          <fieldset>
+            <legend><label class="check-label"><input id="dt-IT" type="checkbox"> Thoroughfare Median zone</label></legend>
+            <label>Frontage facing the median <span class="sym" data-sym="dt.FT"></span>
+              <span class="field"><input id="dt-FT" type="number" min="0" step="0.1" value="0"><span class="unit">ft</span></span>
+            </label>
+            <small>Use 0 if the property does not face a landscaped median on a thoroughfare.</small>
+          </fieldset>
+        </form>
+        <div class="formulas">
+          <h3>Formula</h3>
+          <div id="dt-general" class="formula"></div>
+          <p class="where">Each median zone splits its cost two ways. One-third is shared by the properties that face the median, based on frontage. Two-thirds is shared by every property in the zone, based on lot size.</p>
+          <h3>Constants</h3>
+          <div id="dt-constants" class="constants"></div>
+          <h3>With your values</h3>
+          <div id="dt-sub" class="formula live"></div>
+          <div id="dt-result" class="result"></div>
+          <details class="aside">
+            <summary>How the rates go up each year</summary>
+            <p>Each year, the rates can rise as much as prices rose, measured by the Consumer Price Index (CPI). The increase can't be more than 5%. This year's rates above already include the increase.</p>
+            <div id="dt-cpi-general" class="formula"></div>
+            <div id="dt-cpi-constants" class="constants"></div>
+            <div id="dt-cpi-sub" class="formula live"></div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Citywide Street Lighting -->
+    <section class="district" id="citywide" aria-labelledby="cw-title">
+      <div class="district-head">
+        <span class="num">4</span>
+        <div>
+          <h2 id="cw-title">Citywide Street Lighting Assessment District</h2>
+          <p>Properties across the city pay based on how they are used. Each type of use counts as a number of equivalent dwelling units (EDUs). A regular single-family home counts as 1 EDU. Busier places, like shopping centers, count as more.</p>
+        </div>
+      </div>
+      <div class="calc">
+        <form class="inputs" onsubmit="return false">
+          <h3>Your property</h3>
+          <label>County land use code
+            <input id="cw-code" type="text" inputmode="numeric" placeholder="e.g. 11" autocomplete="off">
+          </label>
+          <small id="cw-code-status" role="status" aria-live="polite"></small>
+          <label>Land use type <span class="sym" data-sym="cw.L"></span>
+            <select id="cw-class"></select>
+          </label>
+          <small>You can type the county's code or pick a type from the list.</small>
+        </form>
+        <div class="formulas">
+          <h3>Formula</h3>
+          <div id="cw-general" class="formula"></div>
+          <h3>Constants</h3>
+          <div id="cw-constants" class="constants"></div>
+          <h3>With your values</h3>
+          <div id="cw-sub" class="formula live"></div>
+          <div id="cw-result" class="result"></div>
+          <p class="where">Land owned by the government or taxed by the State Board pays only for the part used like a business. Mobile homes themselves don't pay, but the land under them does.</p>
+          <details class="aside">
+            <summary>EDU values for every land use type</summary>
+            <p>Click a row to use that land use type.</p>
+            <div class="table-wrap">
+              <table id="cw-table">
+                <thead><tr><th>Land use type</th><th>Code(s)</th><th>Lighting</th><th>Foot traffic</th><th>Safety</th><th>EDU</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap page-footer">
+    <p>Formulas come from the final FY 2026-27 City of Concord Engineer's Reports, adopted May 26, 2026 (Resolutions 26-31 through 26-34). See <code>meta-analysis/assessment-functions.md</code> in the repository for page references. This is not a certified assessment roll.</p>
+  </footer>
+  <div id="tooltip" role="tooltip" hidden></div>
+</body>
+</html>

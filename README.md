@@ -10,6 +10,13 @@ APN/address search, clickable boundaries, satellite/street basemaps, all parcel
 attributes, and a selected-parcel GeoJSON download. No application backend or
 third-party Python/Node packages are needed.
 
+[public/assessments.html](public/assessments.html) is a standalone calculator
+page for the four FY 2026-27 Concord assessment districts. It renders each
+district's formula (native MathML) with hover/tap explanations for every term,
+lists each district's constants in an editable table, and evaluates the
+formula with user-entered parcel values; see [meta-analysis/assessment-functions.md](meta-analysis/assessment-functions.md)
+for the source formulas.
+
 After downloading the parcel GeoJSON, build the static data and serve it locally:
 
 ```powershell
