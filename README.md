@@ -23,6 +23,15 @@ to any static host. Relative URLs also support hosting under a subdirectory.
 Do not open the page directly through `file://`; browser fetch requires HTTP.
 Public hosting publishes the downloaded ownership and other parcel attributes.
 
+### GitHub Pages
+
+The published map is at <https://spinnernicholas.github.io/concord-lnl/>.
+The [Pages workflow](.github/workflows/pages.yml) deploys the contents of `public`
+when site files change on `main`, or when manually triggered in GitHub Actions.
+Repository **Settings > Pages > Source** must be **GitHub Actions**.
+Generated data is already committed; deployment does not rerun the downloader
+or require access to the source GIS service.
+
 The builder splits the large GeoJSON into spatial geometry chunks plus separate
 attribute chunks, preserving original coordinates and every attribute. Boundaries
 load only at zoom level 15 or closer; APN/address search works at every zoom.
