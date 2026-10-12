@@ -23,7 +23,7 @@ and observed values. Treat them as interpretations unless stated otherwise.
 | Home count `U_i`, `u_Bi` | Downtown, District No. 3 | `UNITS` | 1,343 (3.4%) | Sparse |
 | Has homes `R_i` | Downtown | Derived from `USE_CODE` | 99.4% | Derived |
 | EDU `EDU_i` | District No. 3 (Ygnacio Woods) | Derived from `USE_CODE` | 99.4% | Derived |
-| District or zone membership (`I_*`) | All but Citywide | none | 0 | Missing |
+| District or zone membership (`I_*`) | All but Citywide | none (see [rolls/](rolls/README.md)) | 0 | Missing from layer; in rolls |
 | Street or median frontage `F_i` | Downtown | none | 0 | Missing |
 
 The [Missing inputs](#missing-inputs) section lists what has to come from
@@ -154,10 +154,19 @@ districts or zones.
 ## Missing inputs
 
 1. **District and zone membership.** No field marks Pine Hollow, the four
-   District No. 3 zones, or the four Downtown zones. Possible sources:
-   - the boundary diagrams in the Engineer's Reports;
-   - a City GIS district layer, if one is published;
-   - the parcel lists in the reports' assessment rolls, joined by `APN`.
+   District No. 3 zones, or the four Downtown zones. The reports' assessment
+   rolls fill most of this gap. They are saved in [rolls/](rolls/README.md),
+   and every APN in them joins to this layer once the dashes are removed. The
+   rolls cover:
+   - all 401 Pine Hollow parcels;
+   - the Kirkwood and Ygnacio Woods zones of District No. 3. Valley Terrace
+     and Balhan Terrace are levied $0, so they are not listed. Use the
+     boundary diagrams for those two zones;
+   - all 767 Downtown parcels, with their Todos Santos, Collector Median and
+     Streetscape zones (every Downtown parcel is in the Thoroughfare zone).
+
+   The Citywide roll is not printed in its report; it is on file with the
+   City Clerk.
 2. **Downtown street and median frontage `F_i^S`, `F_i^C` and `F_i^T`.** No
    field has these. `Shape.STLength()` is the whole parcel perimeter, not the
    length along the street. Frontage could be estimated by finding the parcel

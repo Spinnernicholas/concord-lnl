@@ -24,6 +24,8 @@ FY 2026-27 rows of [sources.csv](sources.csv).
 - None of the four functions takes parcel-to-improvement distance as an input.
 - [parcel-data-inputs.md](parcel-data-inputs.md) lists which inputs are in
   the map app's parcel records and how complete they are.
+- [rolls/](rolls/README.md) has the parcel lists (APN, zone, amount) taken
+  from the Pine Hollow, District No. 3 and Downtown assessment rolls.
 
 ## 1. Pine Hollow Estates Landscape and Lighting Maintenance District
 
