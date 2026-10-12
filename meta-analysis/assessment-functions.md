@@ -22,6 +22,8 @@ FY 2026-27 rows of [sources.csv](sources.csv).
   not specify one universal rounding function for all four districts.
 - Rates below are the reports' FY 2026-27 constants unless stated otherwise.
 - None of the four functions takes parcel-to-improvement distance as an input.
+- [parcel-data-inputs.md](parcel-data-inputs.md) lists which inputs are in
+  the map app's parcel records and how complete they are.
 
 ## 1. Pine Hollow Estates Landscape and Lighting Maintenance District
 

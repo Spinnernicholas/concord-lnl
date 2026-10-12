@@ -45,7 +45,9 @@ report before extracting methodology.
 The four current Concord district assessments have been transcribed into
 explicit functions, with input definitions and FY 2026-27 constants, in
 [assessment-functions.md](assessment-functions.md). This includes the full
-Citywide Street Lighting EDU classification lookup.
+Citywide Street Lighting EDU classification lookup. Which of those inputs
+appear in the map app's parcel records, and how complete they are, is
+documented in [parcel-data-inputs.md](parcel-data-inputs.md).
 
 ### Initial report screen
 

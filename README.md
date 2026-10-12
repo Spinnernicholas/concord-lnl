@@ -15,7 +15,8 @@ page for the four FY 2026-27 Concord assessment districts. It renders each
 district's formula (native MathML) with hover/tap explanations for every term,
 lists each district's constants in an editable table, and evaluates the
 formula with user-entered parcel values; see [meta-analysis/assessment-functions.md](meta-analysis/assessment-functions.md)
-for the source formulas.
+for the source formulas and [meta-analysis/parcel-data-inputs.md](meta-analysis/parcel-data-inputs.md)
+for which inputs the parcel records contain.
 
 After downloading the parcel GeoJSON, build the static data and serve it locally:
 
