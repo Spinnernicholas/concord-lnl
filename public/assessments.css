@@ -6,15 +6,18 @@ body { margin: 0; }
 .page-header { background: #132f43; color: white; padding: 32px 0 0; }
 .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 2px; color: #81d5c8; }
 h1 { font-size: 30px; line-height: 1.2; margin: 12px 0; letter-spacing: -.5px; }
-.page-header p { max-width: 760px; font-size: 15px; line-height: 1.6; color: #ccdbe4; margin: 0 0 22px; }
-.page-header nav { display: flex; flex-wrap: wrap; gap: 4px; }
-.page-header nav a { color: #e3eef3; text-decoration: none; font-size: 13px; font-weight: 600; padding: 10px 14px; border-radius: 6px 6px 0 0; }
-.page-header nav a:hover { background: #ffffff18; }
-.page-header nav a.back { margin-left: auto; color: #81d5c8; }
+.page-header p { max-width: 760px; font-size: 15px; line-height: 1.6; color: #ccdbe4; margin: 0; padding-bottom: 18px; }
+.district-nav { position: sticky; top: 0; z-index: 5; background: #132f43; box-shadow: 0 2px 10px #0b1f2d40; }
+.district-nav .wrap { display: flex; gap: 4px; padding-top: 6px; padding-bottom: 6px; overflow-x: auto; scrollbar-width: none; }
+.district-nav .wrap::-webkit-scrollbar { display: none; }
+.district-nav a { flex: none; color: #e3eef3; text-decoration: none; font-size: 13px; font-weight: 600; padding: 9px 14px; border-radius: 999px; white-space: nowrap; }
+.district-nav a:hover { background: #ffffff18; }
+.district-nav a.active { background: white; color: #132f43; }
+.district-nav a.back { margin-left: auto; color: #81d5c8; }
 
 .notice { margin: 0; padding: 12px 16px; border-left: 4px solid #df8116; background: #fff6ea; border-radius: 4px; font-size: 13px; line-height: 1.6; color: #6a4a1d; }
 
-.district { background: white; border-radius: 10px; box-shadow: 0 2px 16px #18334a12; margin: 0 0 28px; scroll-margin-top: 16px; overflow: hidden; }
+.district { background: white; border-radius: 10px; box-shadow: 0 2px 16px #18334a12; margin: 0 0 28px; scroll-margin-top: 64px; overflow: hidden; }
 .district-head { display: flex; gap: 16px; padding: 22px 24px; border-bottom: 1px solid #e6edf1; }
 .district-head .num { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: #087f79; color: white; font-weight: 700; }
 .district-head h2 { font-size: 19px; margin: 4px 0 6px; }
@@ -75,12 +78,57 @@ tbody tr.selected { background: #e6f5f1; font-weight: 600; }
 
 .page-footer { padding-bottom: 32px; font-size: 12px; line-height: 1.6; color: #758590; }
 
+/* Collapsible formula and constants panels */
+.panel { margin: 0 0 16px; }
+.panel > summary { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: #758590; margin: 4px 0 8px; list-style: none; display: flex; align-items: center; gap: 6px; }
+.panel > summary::-webkit-details-marker { display: none; }
+.panel > summary::before { content: ""; width: 6px; height: 6px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); transition: transform .15s; margin: 0 2px; }
+.panel[open] > summary::before { transform: rotate(45deg); }
+.panel > .constants, .panel > .formula:last-child { margin-bottom: 0; }
+.panel > .where { margin: 10px 0 0; }
+
+/* Equations split onto several lines to fit narrow screens */
+.formula .math-lines { display: flex; flex-direction: column; align-items: flex-start; }
+.formula .math-lines math { margin: 2px 0; }
+.formula .math-lines math.cont { padding-left: 1.4em; }
+
 @media (max-width: 800px) {
   .calc { grid-template-columns: 1fr; }
   .inputs { border-right: 0; border-bottom: 1px solid #e6edf1; }
-  .formulas { padding: 18px 20px; }
+  .formulas { padding: 18px 20px; display: flex; flex-direction: column; }
+  .live-block { order: -1; margin-bottom: 8px; }
   h1 { font-size: 24px; }
-  .page-header nav a.back { margin-left: 0; }
+}
+
+@media (max-width: 700px) {
+  .wrap { padding: 0 14px; }
+  .page-header { padding-top: 20px; }
+  .page-header p { font-size: 14px; }
+  .district-nav .wrap { padding: 6px 10px; }
+  .district-nav a { padding: 11px 14px; font-size: 14px; }
+  .district-head { padding: 18px 16px; flex-wrap: wrap; gap: 10px 12px; }
+  .district-head .map-link { margin-left: 46px; display: inline-flex; align-items: center; min-height: 44px; padding: 0; font-size: 14px; }
+  .district-head h2 { font-size: 17px; }
+  .inputs { padding: 16px; }
+  .formulas { padding: 16px 14px; }
+  .formula { padding: 8px 10px; }
+  .formula math { font-size: 1.1em; }
+  .inputs > label, fieldset > label:not(.check-label), .check-label { font-size: 14px; }
+  .inputs small { font-size: 12px; }
+  .field input, .inputs select, .inputs input[type=text], .const-table .field input { font-size: 16px; min-height: 44px; }
+  .check-label { min-height: 44px; }
+  .check-label input { width: 22px; height: 22px; }
+  .panel > summary { min-height: 44px; margin: 0; font-size: 12px; }
+  .aside > summary { padding: 12px 0; font-size: 14px; }
+  .reset { min-height: 44px; font-size: 14px; padding: 8px 14px; }
+  .result strong { font-size: 26px; }
+  .banner-actions { gap: 4px 18px; }
+  .banner-actions a { display: inline-block; padding: 10px 0; font-size: 14px; }
+  .const-table th { width: 44px; }
+  .const-table td:last-child { width: 132px; }
+  .const-table td { font-size: 13px; }
+  th, td { padding: 9px 10px; }
+  #tooltip { max-width: calc(100vw - 24px); }
 }
 
 /* How-to box */

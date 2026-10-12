@@ -33,9 +33,104 @@ let viewToken = 0;
 let searchToken = 0;
 let selectionDownload;
 
+let statusTimer;
 function status(element, message, error = false) {
   element.textContent = message;
   element.classList.toggle("error", error);
+  if (element.id === "map-status") {
+    clearTimeout(statusTimer);
+    element.classList.remove("faded");
+    if (!error) statusTimer = setTimeout(() => element.classList.add("faded"), 4000);
+  }
+}
+
+// Mobile bottom sheet: the sidebar slides over a full-screen map.
+const mobileQuery = window.matchMedia("(max-width: 700px)");
+const isMobile = () => mobileQuery.matches;
+let sheetState = "collapsed";
+let sheetPx = 0;
+
+function sheetHeights() {
+  const vh = window.innerHeight;
+  const collapsed = Math.min(byId("sheet-handle").nextElementSibling.offsetHeight + byId("search-form").offsetHeight + 4, vh * .45);
+  return { collapsed, half: Math.max(vh * .5, collapsed), full: vh * .92 };
+}
+
+function setSheetHeight(px) {
+  sheetPx = px;
+  document.documentElement.style.setProperty("--sheet-h", `${Math.round(px)}px`);
+}
+
+function setSheet(state) {
+  if (!isMobile()) return;
+  sheetState = state;
+  setSheetHeight(sheetHeights()[state]);
+  if (state === "collapsed") document.querySelector(".sidebar").scrollTop = 0;
+}
+
+function fitOptions(pad, maxZoom) {
+  if (!isMobile()) return { padding: [pad, pad], maxZoom };
+  return { paddingTopLeft: [pad, pad + 50], paddingBottomRight: [pad, pad + sheetPx], maxZoom };
+}
+
+function setupSheet() {
+  const handle = byId("sheet-handle");
+  const header = handle.nextElementSibling;
+  let drag = null;
+  let suppressClick = false;
+  const cycle = () => setSheet(sheetState === "collapsed" ? "half" : sheetState === "half" ? "full" : "collapsed");
+  const start = (event) => {
+    if (!isMobile() || (event.pointerType === "mouse" && event.button !== 0)) return;
+    drag = { y: event.clientY, h: sheetPx, moved: false, id: event.pointerId, target: event.currentTarget };
+  };
+  const move = (event) => {
+    if (!drag || event.pointerId !== drag.id) return;
+    const dy = event.clientY - drag.y;
+    if (!drag.moved && Math.abs(dy) < 6) return;
+    if (!drag.moved) {
+      drag.moved = true;
+      document.body.classList.add("sheet-dragging");
+    }
+    event.preventDefault();
+    const { collapsed, full } = sheetHeights();
+    setSheetHeight(Math.min(full, Math.max(collapsed, drag.h - dy)));
+  };
+  const end = (event) => {
+    if (!drag || event.pointerId !== drag.id) return;
+    const wasDrag = drag.moved;
+    const fromHandle = drag.target === handle;
+    drag = null;
+    document.body.classList.remove("sheet-dragging");
+    if (!wasDrag) {
+      if (fromHandle && event.type === "pointerup") cycle();
+      return;
+    }
+    suppressClick = true;
+    setTimeout(() => { suppressClick = false; }, 0);
+    const heights = sheetHeights();
+    const nearest = Object.keys(heights).reduce((a, b) => Math.abs(heights[a] - sheetPx) <= Math.abs(heights[b] - sheetPx) ? a : b);
+    setSheet(nearest);
+  };
+  handle.addEventListener("pointerdown", start);
+  header.addEventListener("pointerdown", start);
+  window.addEventListener("pointermove", move);
+  window.addEventListener("pointerup", end);
+  window.addEventListener("pointercancel", end);
+  window.addEventListener("click", (event) => {
+    if (suppressClick) { event.preventDefault(); event.stopPropagation(); suppressClick = false; }
+  }, true);
+  handle.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") { event.preventDefault(); cycle(); }
+  });
+  byId("search").addEventListener("focus", () => setSheet("full"));
+  const sync = () => {
+    byId("legend-box").open = !isMobile();
+    if (isMobile()) setSheet(sheetState);
+    else document.documentElement.style.removeProperty("--sheet-h");
+  };
+  mobileQuery.addEventListener("change", sync);
+  window.addEventListener("resize", () => { if (isMobile()) setSheet(sheetState); });
+  sync();
 }
 
 async function fetchJson(path, cache, key) {
@@ -229,7 +324,7 @@ function zoomToDistrict(districtId, layerId) {
   if (!districtOn.has(districtId)) setDistrict(districtId, true);
   const ids = layerId ? [layerId] : districtById.get(districtId).layers.map((l) => l.id);
   const group = L.featureGroup(ids.map((id) => outlineLayers.get(id)).filter(Boolean));
-  if (group.getLayers().length) map.fitBounds(group.getBounds(), { padding: [30, 30], maxZoom: 17 });
+  if (group.getLayers().length) map.fitBounds(group.getBounds(), fitOptions(30, 17));
 }
 
 function setDistrict(districtId, on) {
@@ -445,6 +540,13 @@ function renderDetails(attributes, feature) {
   const open = el("a", "Open in the calculators", "button primary");
   open.href = calculatorUrl(attributes, entries, entries[0]?.d || "citywide");
   card.append(open);
+  const quick = el("div", null, "quick");
+  const quickText = el("div");
+  quickText.append(el("small", cw.status === "ok" ? "Total this year (Citywide estimated)" : "Total this year"), el("strong", money.format(total)));
+  const quickOpen = el("a", "Calculator", "button primary");
+  quickOpen.href = open.href;
+  quick.append(quickText, quickOpen);
+  details.querySelector(".badge").before(quick);
   details.append(card);
 
   const inputs = el("dl", null, "inputs");
@@ -509,6 +611,15 @@ function clearSelection() {
   renderEmptyDetails();
 }
 
+function keepSelectionVisible() {
+  if (!selectedLayer) return;
+  const bounds = selectedLayer.getBounds();
+  if (!bounds.isValid()) return;
+  const point = map.latLngToContainerPoint(bounds.getCenter());
+  const visibleBottom = map.getSize().y - sheetPx;
+  if (point.y > visibleBottom - 30 || point.y < 60) map.panBy([0, point.y - (visibleBottom + 50) / 2]);
+}
+
 async function selectParcel(feature, tile, id = feature?.properties.OBJECTID) {
   const token = ++selectedToken;
   if (selectedLayer) map.removeLayer(selectedLayer);
@@ -525,7 +636,11 @@ async function selectParcel(feature, tile, id = feature?.properties.OBJECTID) {
     selectedApn = apnDigits(attributes.APN);
     if (selectedApn) setHash(`apn=${selectedApn}`);
     renderDetails(attributes, feature);
-    if (window.matchMedia("(max-width: 700px)").matches) byId("details").scrollIntoView({ behavior: "smooth" });
+    if (isMobile()) {
+      if (sheetState === "collapsed") setSheet("half");
+      byId("details").scrollIntoView({ behavior: "smooth", block: "start" });
+      keepSelectionVisible();
+    }
     for (const key of attributeCache.keys()) {
       if (key !== tile) attributeCache.delete(key);
     }
@@ -547,7 +662,11 @@ async function chooseResult(row) {
     if (token !== searchToken) return;
     const feature = data.features.find((item) => item.properties.OBJECTID === row.id);
     if (!feature) throw new Error(`Object ID ${row.id} is missing from the geometry file`);
-    map.fitBounds(boundsToLeaflet(row.bounds), { padding: [40, 40], maxZoom: 18 });
+    if (isMobile()) {
+      byId("search").blur();
+      setSheet("half");
+    }
+    map.fitBounds(boundsToLeaflet(row.bounds), fitOptions(40, 18));
     await selectParcel(feature, row.tile);
     if (token === searchToken) status(byId("search-status"), `Selected ${apnDisplay(apnDigits(row.apn))}.`);
   } catch (error) {
@@ -620,6 +739,7 @@ byId("reset-view").addEventListener("click", () => map.setView(overview.center, 
 window.addEventListener("hashchange", applyHash);
 
 async function initialize() {
+  setupSheet();
   renderEmptyDetails();
   try {
     [manifest, districtData] = await Promise.all([fetchJson("data/manifest.json"), fetchJson("data/districts.json")]);

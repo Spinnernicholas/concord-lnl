@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Concord Assessment Calculators</title>
   <link rel="stylesheet" href="assessments.css">
   <script defer src="assessment-schedule.js"></script>
@@ -14,15 +14,18 @@
       <div class="eyebrow">CITY OF CONCORD / FY 2026-27</div>
       <h1>Special Assessment Calculators</h1>
       <p>Some Concord property owners pay a yearly fee, called a special assessment, for local landscaping and street lights. Each of the four districts below uses its own formula. Enter facts about a property to see how its fee is figured.</p>
-      <nav aria-label="Districts">
-        <a href="#pine-hollow">Pine Hollow</a>
-        <a href="#district-3">District No. 3</a>
-        <a href="#downtown">Downtown</a>
-        <a href="#citywide">Citywide Street Lighting</a>
-        <a class="back" href="index.html">&larr; District map</a>
-      </nav>
     </div>
   </header>
+
+  <nav class="district-nav" aria-label="Districts">
+    <div class="wrap">
+      <a href="#pine-hollow">Pine Hollow</a>
+      <a href="#district-3">District No. 3</a>
+      <a href="#downtown">Downtown</a>
+      <a href="#citywide">Citywide Lighting</a>
+      <a class="back" href="index.html">&larr; District map</a>
+    </div>
+  </nav>
 
   <main class="wrap">
     <div id="parcel-banner" class="parcel-banner" role="region" aria-label="Selected property" hidden></div>
@@ -57,13 +60,19 @@
           <small>Use the floor area when the home was first built. Rooms added later do not count.</small>
         </form>
         <div class="formulas">
-          <h3>Formula</h3>
-          <div id="ph-general" class="formula"></div>
-          <h3>Constants</h3>
-          <div id="ph-constants" class="constants"></div>
-          <h3>With your values</h3>
-          <div id="ph-sub" class="formula live"></div>
-          <div id="ph-result" class="result"></div>
+          <details class="panel formula-panel" open>
+            <summary>Formula</summary>
+            <div id="ph-general" class="formula"></div>
+          </details>
+          <details class="panel constants-panel" open>
+            <summary>Constants</summary>
+            <div id="ph-constants" class="constants"></div>
+          </details>
+          <div class="live-block">
+            <h3>With your values</h3>
+            <div id="ph-sub" class="formula live"></div>
+            <div id="ph-result" class="result"></div>
+          </div>
           <details class="aside">
             <summary>Why not just use the published rate?</summary>
             <p>The city's report prints a rounded rate. Using it gives almost the same answer, but it can be off by a few cents:</p>
@@ -104,14 +113,20 @@
           <small>Only used in Balhan Terrace.</small>
         </form>
         <div class="formulas">
-          <h3>Formula</h3>
-          <div id="d3-general" class="formula"></div>
-          <p class="where">Each zone check equals 1 for the property's own zone and 0 for the others. Multiplying by 0 removes a zone's charge, so only one rate counts.</p>
-          <h3>Constants</h3>
-          <div id="d3-constants" class="constants"></div>
-          <h3>With your values</h3>
-          <div id="d3-sub" class="formula live"></div>
-          <div id="d3-result" class="result"></div>
+          <details class="panel formula-panel" open>
+            <summary>Formula</summary>
+            <div id="d3-general" class="formula"></div>
+            <p class="where">Each zone check equals 1 for the property's own zone and 0 for the others. Multiplying by 0 removes a zone's charge, so only one rate counts.</p>
+          </details>
+          <details class="panel constants-panel" open>
+            <summary>Constants</summary>
+            <div id="d3-constants" class="constants"></div>
+          </details>
+          <div class="live-block">
+            <h3>With your values</h3>
+            <div id="d3-sub" class="formula live"></div>
+            <div id="d3-result" class="result"></div>
+          </div>
           <details class="aside">
             <summary>If Balhan Terrace charged a fee again</summary>
             <p>The zone's total cost would be split by the number of homes. A property with more homes would pay a bigger share:</p>
@@ -169,14 +184,20 @@
           </fieldset>
         </form>
         <div class="formulas">
-          <h3>Formula</h3>
-          <div id="dt-general" class="formula"></div>
-          <p class="where">Each median zone splits its cost two ways. One-third is shared by the properties that face the median, based on frontage. Two-thirds is shared by every property in the zone, based on lot size.</p>
-          <h3>Constants</h3>
-          <div id="dt-constants" class="constants"></div>
-          <h3>With your values</h3>
-          <div id="dt-sub" class="formula live"></div>
-          <div id="dt-result" class="result"></div>
+          <details class="panel formula-panel" open>
+            <summary>Formula</summary>
+            <div id="dt-general" class="formula"></div>
+            <p class="where">Each median zone splits its cost two ways. One-third is shared by the properties that face the median, based on frontage. Two-thirds is shared by every property in the zone, based on lot size.</p>
+          </details>
+          <details class="panel constants-panel" open>
+            <summary>Constants</summary>
+            <div id="dt-constants" class="constants"></div>
+          </details>
+          <div class="live-block">
+            <h3>With your values</h3>
+            <div id="dt-sub" class="formula live"></div>
+            <div id="dt-result" class="result"></div>
+          </div>
           <details class="aside">
             <summary>How the rates go up each year</summary>
             <p>Each year, the rates can rise as much as prices rose, measured by the Consumer Price Index (CPI). The increase can't be more than 5%. This year's rates above already include the increase.</p>
@@ -210,14 +231,20 @@
           <small>You can type the county's code or pick a type from the list.</small>
         </form>
         <div class="formulas">
-          <h3>Formula</h3>
-          <div id="cw-general" class="formula"></div>
-          <h3>Constants</h3>
-          <div id="cw-constants" class="constants"></div>
-          <h3>With your values</h3>
-          <div id="cw-sub" class="formula live"></div>
-          <div id="cw-result" class="result"></div>
-          <p class="where">Land owned by the government or taxed by the State Board pays only for the part used like a business. Mobile homes themselves don't pay, but the land under them does.</p>
+          <details class="panel formula-panel" open>
+            <summary>Formula</summary>
+            <div id="cw-general" class="formula"></div>
+          </details>
+          <details class="panel constants-panel" open>
+            <summary>Constants</summary>
+            <div id="cw-constants" class="constants"></div>
+          </details>
+          <div class="live-block">
+            <h3>With your values</h3>
+            <div id="cw-sub" class="formula live"></div>
+            <div id="cw-result" class="result"></div>
+            <p class="where">Land owned by the government or taxed by the State Board pays only for the part used like a business. Mobile homes themselves don't pay, but the land under them does.</p>
+          </div>
           <details class="aside">
             <summary>EDU values for every land use type</summary>
             <p>Click a row to use that land use type.</p>

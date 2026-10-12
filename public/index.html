@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Concord Assessment District Map</title>
   <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
   <link rel="stylesheet" href="style.css">
@@ -12,6 +12,7 @@
 </head>
 <body>
   <aside class="sidebar">
+    <div id="sheet-handle" class="sheet-handle" role="button" tabindex="0" aria-label="Resize the panel"><span></span></div>
     <header>
       <div class="eyebrow">CITY OF CONCORD / FY 2026-27</div>
       <h1>Assessment District Map</h1>
@@ -25,7 +26,7 @@
     <form id="search-form" role="search">
       <label for="search">Find a property</label>
       <div class="search-row">
-        <input id="search" type="search" placeholder="APN or street address" autocomplete="off" disabled>
+        <input id="search" type="search" enterkeyhint="search" placeholder="APN or street address" autocomplete="off" disabled>
         <button id="search-button" type="submit" disabled>Search</button>
       </div>
     </form>
@@ -49,11 +50,11 @@
   <main class="map-panel" aria-label="Interactive map">
     <div id="map"></div>
     <div class="map-toolbar">
-      <button id="reset-view" type="button">Concord overview</button>
-      <label><input id="show-parcels" type="checkbox" checked> Property lines</label>
+      <button id="reset-view" type="button" aria-label="Concord overview"><span class="icon" aria-hidden="true">&#8962;</span><span class="long">Concord overview</span></button>
+      <label><input id="show-parcels" type="checkbox" checked> <span class="long">Property lines</span><span class="short">Lines</span></label>
     </div>
     <div id="map-status" role="status" aria-live="polite">Loading map...</div>
-    <div id="legend" class="legend" aria-label="Map legend"></div>
+    <details id="legend-box" class="legend"><summary>Key</summary><div id="legend" aria-label="Map legend"></div></details>
   </main>
 </body>
 </html>

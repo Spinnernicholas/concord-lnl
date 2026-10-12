@@ -321,7 +321,92 @@ document.addEventListener('focusin', (e) => {
 });
 document.addEventListener('focusout', (e) => { if (e.target === tipFor) hideTip(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideTip(); });
+document.addEventListener('pointerdown', (e) => { if (tipFor && !e.target.closest?.('[data-term]')) hideTip(); });
 addEventListener('scroll', hideTip, { passive: true });
+
+// ---------- fitting long equations on narrow screens ----------
+// MathML has no automatic line breaking, so an equation that is too wide is
+// split before a top-level "=" (then "+"/"−", then "×"/"·") onto stacked lines.
+// Nodes are moved, not copied, so every term keeps its tooltip.
+const BREAK_LEVELS = [['=', '≈'], ['+', '−'], ['×', '·']];
+const fitState = new WeakMap();
+
+function splitBefore(nodes, ops) {
+  const segs = [[]];
+  nodes.forEach((n, i) => {
+    if (i > 0 && n.localName === 'mo' && ops.includes(n.textContent.trim())) segs.push([]);
+    segs[segs.length - 1].push(n);
+  });
+  return segs;
+}
+
+function fitMath(mathEl, avail, indent) {
+  const top = mathEl.children.length === 1 && mathEl.firstElementChild.localName === 'mrow'
+    ? mathEl.firstElementChild : mathEl;
+  if (top.getBoundingClientRect().width <= avail) return;
+  const nodes = [...top.children];
+  const probe = document.createElementNS(mathEl.namespaceURI, 'math');
+  probe.setAttribute('display', 'block');
+  const probeRow = document.createElementNS(mathEl.namespaceURI, 'mrow');
+  probe.append(probeRow);
+  probe.style.cssText = 'position:absolute;visibility:hidden;width:max-content';
+  mathEl.after(probe);
+  const fits = (list, first) => {
+    probeRow.replaceChildren(...list);
+    return probeRow.getBoundingClientRect().width <= avail - (first ? 0 : indent);
+  };
+  const flatten = (list) => list.flatMap((n) => (n.localName === 'mrow' && !n.hasAttribute('data-term') ? flatten([...n.children]) : [n]));
+  const pack = (list, level, first, flat = false) => {
+    if (level >= BREAK_LEVELS.length) {
+      // Last resort: open up bracket groups so their insides can break too.
+      const opened = flat ? list : flatten(list);
+      return opened.length > list.length ? pack(opened, 1, first, true) : [list];
+    }
+    const lines = [];
+    let cur = [];
+    for (const seg of splitBefore(list, BREAK_LEVELS[level])) {
+      const next = cur.concat(seg);
+      if (cur.length && !fits(next, first && !lines.length)) { lines.push(cur); cur = seg; } else cur = next;
+    }
+    lines.push(cur);
+    return lines.flatMap((line, i) => (fits(line, first && i === 0) ? [line] : pack(line, level + 1, first && i === 0, flat)));
+  };
+  const lines = pack(nodes, 0, true);
+  probe.remove();
+  if (lines.length < 2) {
+    top.replaceChildren(...lines[0]);
+    return;
+  }
+  const box = document.createElement('div');
+  box.className = 'math-lines';
+  lines.forEach((line, i) => {
+    const m = document.createElementNS(mathEl.namespaceURI, 'math');
+    m.setAttribute('display', 'block');
+    if (i) m.classList.add('cont');
+    const r = document.createElementNS(mathEl.namespaceURI, 'mrow');
+    r.append(...line);
+    m.append(r);
+    box.append(m);
+  });
+  mathEl.replaceWith(box);
+}
+
+function fitFormula(container) {
+  const state = fitState.get(container);
+  if (state && container.innerHTML === state.out && state.out !== state.orig) container.innerHTML = state.orig;
+  const orig = container.innerHTML;
+  const style = getComputedStyle(container);
+  const avail = container.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) - 2;
+  if (avail > 0) {
+    const indent = parseFloat(style.fontSize) * 1.2 * 1.4;
+    container.querySelectorAll(':scope > math[display=block]').forEach((m) => fitMath(m, avail, indent));
+  }
+  fitState.set(container, { orig, out: container.innerHTML });
+}
+
+function fitFormulas(root = document) {
+  root.querySelectorAll('.formula').forEach(fitFormula);
+}
 
 // ---------- shared UI ----------
 document.querySelectorAll('[data-sym]').forEach((el) => {
@@ -335,7 +420,7 @@ function constantsTable(containerId, keys) {
     const pre = g.prefix ? `<span class="unit pre">${esc(g.prefix)}</span>` : '';
     const unit = g.unit ? `<span class="unit">${esc(g.unit)}</span>` : '';
     return `<tr><th scope="row"><math>${term(key)}</math></th><td>${esc(g.name)}</td>` +
-      `<td><span class="field">${pre}<input id="${g.id}" type="number" min="0" step="${g.step}" value="${g.value}" aria-label="${esc(g.name)}">${unit}</span></td></tr>`;
+      `<td><span class="field">${pre}<input id="${g.id}" type="number" inputmode="decimal" min="0" step="${g.step}" value="${g.value}" aria-label="${esc(g.name)}">${unit}</span></td></tr>`;
   }).join('');
   box.innerHTML = `<table class="const-table"><tbody>${rows}</tbody></table>` +
     '<button type="button" class="reset">Reset to FY 2026-27 values</button>';
@@ -366,8 +451,9 @@ function rollNote(id, value) {
 
 function bind(sectionId, fn) {
   const section = $(sectionId);
-  section.addEventListener('input', fn);
-  section.addEventListener('change', fn);
+  const run = () => { fn(); fitFormulas(section); };
+  section.addEventListener('input', run);
+  section.addEventListener('change', run);
   fn();
 }
 
@@ -674,6 +760,51 @@ async function loadRoll() {
     console.warn('Could not load the assessment rolls:', error);
   }
 }
+
+// ---------- mobile layout ----------
+const narrow = matchMedia('(max-width: 700px)');
+document.querySelectorAll('input[type=number]').forEach((el) => { el.inputMode = 'decimal'; });
+
+function syncPanels() {
+  document.querySelectorAll('details.panel').forEach((d) => { d.open = !narrow.matches; });
+}
+syncPanels();
+narrow.addEventListener('change', syncPanels);
+document.querySelectorAll('details').forEach((d) => d.addEventListener('toggle', () => { if (d.open) fitFormulas(d); }));
+
+fitFormulas();
+let lastWidth = innerWidth;
+let fitTimer;
+addEventListener('resize', () => {
+  if (innerWidth === lastWidth) return;
+  lastWidth = innerWidth;
+  clearTimeout(fitTimer);
+  fitTimer = setTimeout(() => fitFormulas(), 150);
+});
+
+const navLinks = [...document.querySelectorAll('.district-nav a[href^="#"]')];
+const navBar = document.querySelector('.district-nav .wrap');
+const visibleSections = new Set();
+function setActiveNav() {
+  const current = navLinks.map((a) => a.hash.slice(1)).find((id) => visibleSections.has(id));
+  for (const a of navLinks) {
+    const active = a.hash.slice(1) === current;
+    a.classList.toggle('active', active);
+    if (active) {
+      a.setAttribute('aria-current', 'location');
+      const left = a.offsetLeft - (navBar.clientWidth - a.offsetWidth) / 2;
+      navBar.scrollTo({ left, behavior: 'smooth' });
+    } else a.removeAttribute('aria-current');
+  }
+}
+const navObserver = new IntersectionObserver((entries) => {
+  for (const e of entries) {
+    if (e.isIntersecting) visibleSections.add(e.target.id);
+    else visibleSections.delete(e.target.id);
+  }
+  setActiveNav();
+}, { rootMargin: '-80px 0px -55% 0px' });
+document.querySelectorAll('section.district').forEach((s) => navObserver.observe(s));
 
 if (parcelApn) {
   applyParams();

@@ -95,22 +95,67 @@ footer { padding: 18px 24px; border-top: 1px solid #e6edf1; font-size: 11px; lin
 .map-toolbar label { padding: 0 8px 0 0; white-space: nowrap; font-size: 12px; }
 #map-status { position: absolute; left: 15px; bottom: 35px; z-index: 1000; max-width: calc(100% - 30px); padding: 10px 14px; border-radius: 6px; background: #ffffffed; box-shadow: 0 2px 10px #18334a20; font-size: 13px; }
 .error { color: #a52828 !important; }
-.legend { position: absolute; bottom: 80px; left: 15px; z-index: 1000; background: #ffffffed; border-radius: 6px; box-shadow: 0 2px 10px #18334a20; padding: 9px 12px; font-size: 12px; display: flex; flex-direction: column; gap: 5px; }
-.legend:empty { display: none; }
+.legend { position: absolute; bottom: 80px; left: 15px; z-index: 1000; margin: 0; background: #ffffffed; border-radius: 6px; box-shadow: 0 2px 10px #18334a20; padding: 9px 12px; font-size: 12px; max-height: calc(100% - 140px); overflow-y: auto; }
+.legend:has(#legend:empty) { display: none; }
+.legend summary { font-size: 12px; }
+#legend { display: flex; flex-direction: column; gap: 5px; margin-top: 7px; }
 .legend-item { display: flex; align-items: center; gap: 7px; }
 .legend-item.selected .swatch { border-color: #111c24; background: #ffd34d; }
 .legend-item.other .swatch { border-width: 1px; background: #8aa0ad1a; }
+#map-status { transition: opacity .4s; }
+#map-status.faded { opacity: 0; pointer-events: none; }
+.map-toolbar .short, .map-toolbar .icon, .sheet-handle, .quick { display: none; }
+.map-toolbar .long { display: inline; }
+
 @media (max-width: 700px) {
-  body { flex-direction: column-reverse; }
-  .sidebar { width: 100%; height: 48%; }
-  .map-panel { flex: none; height: 52%; }
-  header { padding: 14px 20px 0; }
-  h1 { font-size: 20px; margin: 6px 0; }
+  :root { --sheet-h: 45dvh; }
+  body { display: block; overflow: hidden; }
+  .map-panel { position: fixed; inset: 0; }
+  .sidebar { position: fixed; left: 0; right: 0; bottom: 0; width: 100%; height: var(--sheet-h); border-radius: 16px 16px 0 0; box-shadow: 0 -4px 20px #18334a30; overscroll-behavior: contain; padding-bottom: env(safe-area-inset-bottom); }
+  body.sheet-dragging .sidebar { transition: none; }
+  body:not(.sheet-dragging) .sidebar { transition: height .25s ease; }
+  .sheet-handle { display: flex; justify-content: center; align-items: center; position: sticky; top: 0; z-index: 2; height: 24px; margin-bottom: -24px; touch-action: none; cursor: grab; }
+  .sheet-handle span { width: 40px; height: 5px; border-radius: 3px; background: #ffffff90; }
+  header { padding: 22px 20px 0; border-radius: 16px 16px 0 0; touch-action: none; }
+  .eyebrow { display: none; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
   header p { display: none; }
-  .tabs { margin-top: 8px; }
-  form { padding: 14px 20px 8px; }
-  #details, #districts { padding-left: 20px; padding-right: 20px; }
-  .map-toolbar { gap: 3px; }
-  .map-toolbar button, .map-toolbar label { font-size: 11px; }
-  .legend { bottom: 70px; font-size: 11px; }
+  .tabs { margin-top: 6px; }
+  .tabs a { padding: 12px 16px; font-size: 14px; }
+  form { padding: 12px 16px 8px; }
+  form > label { display: none; }
+  .search-row { margin-top: 0; }
+  input[type=search], input, select, textarea { font-size: 16px; }
+  input[type=search] { padding: 11px 12px; min-height: 44px; }
+  #search-button { min-height: 44px; font-size: 15px; padding: 0 16px; }
+  #search-status { padding: 0 16px; }
+  #results { padding: 0 12px; max-height: none; }
+  #results button { min-height: 48px; font-size: 14px; }
+  #details, #districts { padding-left: 16px; padding-right: 16px; }
+  .quick { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; margin: 4px 0 12px; border-radius: 10px; background: #132f43; color: white; }
+  .quick strong { display: block; font-size: 20px; font-variant-numeric: tabular-nums; }
+  .quick small { color: #ccdbe4; font-size: 12px; }
+  .quick .button.primary { min-height: 44px; display: inline-flex; align-items: center; font-size: 14px; }
+  .button, button { min-height: 44px; }
+  .small, a.small { min-height: 40px; min-width: 44px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; }
+  .assess-card .button.primary { display: flex; justify-content: center; align-items: center; }
+  summary { padding: 10px 0; font-size: 14px; }
+  .toggle { min-height: 40px; font-size: 15px; }
+  .toggle input, .zones input { width: 20px; height: 20px; }
+  .zones label { min-height: 36px; font-size: 13px; }
+  .formula-link, .download-link { display: inline-block; padding: 6px 0; font-size: 14px; }
+
+  .leaflet-bottom { bottom: var(--sheet-h); }
+  body:not(.sheet-dragging) .leaflet-bottom, body:not(.sheet-dragging) .legend, body:not(.sheet-dragging) #map-status { transition: bottom .25s ease, opacity .4s; }
+  .leaflet-control-zoom a { width: 40px !important; height: 40px !important; line-height: 40px !important; }
+  .map-toolbar { left: 62px; top: calc(10px + env(safe-area-inset-top)); gap: 4px; padding: 4px; }
+  .map-toolbar .long { display: none; }
+  .map-toolbar .short, .map-toolbar .icon { display: inline; }
+  .map-toolbar button { min-width: 44px; min-height: 40px; font-size: 20px; padding: 0 8px; line-height: 1; }
+  .map-toolbar label { display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 8px; font-size: 13px; }
+  .map-toolbar input { width: 20px; height: 20px; margin: 0; }
+  .legend { left: 10px; bottom: calc(var(--sheet-h) + 40px); max-height: calc(100dvh - var(--sheet-h) - 110px); font-size: 12px; padding: 0 12px; }
+  .legend summary { padding: 10px 0; }
+  .legend[open] { padding-bottom: 10px; }
+  #map-status { left: 62px; right: 62px; top: calc(62px + env(safe-area-inset-top)); bottom: auto; max-width: none; font-size: 13px; }
 }

@@ -36,6 +36,13 @@ for which inputs the parcel records contain. The Citywide EDU schedule and the
 parcel-to-input helpers are shared by both pages in
 [public/assessment-schedule.js](public/assessment-schedule.js).
 
+On phones (700px wide or less) the map fills the screen and the sidebar becomes
+a bottom sheet that can be dragged or tapped between collapsed, half and full
+heights. Selecting a property shows its yearly total and a calculator button
+first. The calculator puts each result first, folds the formula and constants
+into collapsible panels, keeps a sticky district bar at the top, and splits
+equations that are too wide onto stacked lines.
+
 District data for the map comes from `public/data/districts.json`, built from
 the parsed rolls and outlines in [meta-analysis/rolls](meta-analysis/rolls/README.md):
 
