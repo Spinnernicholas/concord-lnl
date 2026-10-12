@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Concord Assessment Calculators</title>
   <link rel="stylesheet" href="assessments.css">
+  <script defer src="assessment-schedule.js"></script>
   <script defer src="assessments.js"></script>
 </head>
 <body>
@@ -18,12 +19,13 @@
         <a href="#district-3">District No. 3</a>
         <a href="#downtown">Downtown</a>
         <a href="#citywide">Citywide Street Lighting</a>
-        <a class="back" href="index.html">&larr; Parcel map</a>
+        <a class="back" href="index.html">&larr; District map</a>
       </nav>
     </div>
   </header>
 
   <main class="wrap">
+    <div id="parcel-banner" class="parcel-banner" role="region" aria-label="Selected property" hidden></div>
     <div class="intro">
       <div class="how-to">
         <h2>How to read the formulas</h2>

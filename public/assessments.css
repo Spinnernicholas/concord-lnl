@@ -130,3 +130,19 @@ math .term:focus-visible { outline: 2px solid #28a5a0; }
   .intro { grid-template-columns: 1fr; }
   .const-table td:last-child { width: 150px; }
 }
+
+/* Property opened from the map */
+.parcel-banner { margin: 22px 0 0; padding: 16px 20px; border-radius: 10px; border: 1px solid #b9dcd6; background: #eef8f6; font-size: 14px; line-height: 1.6; }
+.parcel-banner .eyebrow { display: block; color: #087f79; }
+.parcel-banner strong { font-size: 18px; }
+.parcel-banner .addr { color: #536878; margin-left: 6px; }
+.parcel-banner p { margin: 6px 0; color: #3d5262; }
+.banner-actions { display: flex; flex-wrap: wrap; gap: 18px; font-size: 13px; font-weight: 600; }
+.banner-actions a, .map-link { color: #087f79; }
+.district-head .map-link { margin-left: auto; align-self: flex-start; flex: none; font-size: 13px; font-weight: 600; white-space: nowrap; padding-top: 6px; }
+.field.unknown input { border-color: #df8116; background: #fff6ea; }
+.result .roll-note { flex-basis: 100%; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 14px; margin: 6px 0 0; padding-top: 10px; border-top: 1px solid #ffffff2a; font-size: 13px; color: #e3eef3; }
+.result .roll-note span { font-size: 13px; letter-spacing: 0; text-transform: none; color: inherit; }
+.result .roll-note strong { font-size: 15px; }
+.result .roll-note .ok { color: #8be0a6; font-weight: 600; }
+.result .roll-note .off { color: #ffcf8a; font-weight: 600; }

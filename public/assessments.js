@@ -256,7 +256,7 @@ define('cw', {
   r: {
     kind: 'const', sym: sub(mi('r'), mtext('EDU')), fmt: per('per EDU'), name: 'Rate per EDU',
     tip: 'The charge for each equivalent dwelling unit. The same rate applies across the city.',
-    value: 25, step: 0.01, prefix: '$', unit: 'per EDU',
+    value: CITYWIDE_RATE, step: 0.01, prefix: '$', unit: 'per EDU',
   },
 });
 
@@ -348,7 +348,20 @@ function constantsTable(containerId, keys) {
 function renderResult(id, value) {
   $(id).innerHTML =
     `<span>Yearly assessment</span><strong>${money(value)}</strong>` +
-    `<small>before rounding: ${fmt(value, 2, 6)}</small>`;
+    `<small>before rounding: ${fmt(value, 2, 6)}</small>` +
+    rollNote(id, value);
+}
+
+// Official roll amounts for a property opened from the map, keyed by result id.
+const rollNotes = {};
+function rollNote(id, value) {
+  const note = rollNotes[id];
+  if (!note) return '';
+  if (note.amount === undefined) return `<p class="roll-note">${esc(note.text)}</p>`;
+  const diff = Math.round((value - note.amount) * 100) / 100;
+  const match = Math.abs(diff) < 0.01 ? 'Matches' : `Differs by ${money(Math.abs(diff))}`;
+  return `<p class="roll-note"><span>${esc(note.text)}: <strong>${money(note.amount)}</strong></span>` +
+    `<span class="${Math.abs(diff) < 0.01 ? 'ok' : 'off'}">${match}</span></p>`;
 }
 
 function bind(sectionId, fn) {
@@ -526,75 +539,6 @@ function downtown() {
 bind('downtown', downtown);
 
 // ---------- 4. Citywide Street Lighting ----------
-// [land use type, county codes, lighting, foot traffic, safety]
-const EDU_SCHEDULE = [
-  ['Single-family home', '11, 12, 13, 14, 19, 61', 0.25, 0.5, 0.25],
-  ['Single-family home on private street', 'N/A', 0.25, 0.5, 0],
-  ['Condominium', '16, 29', 0.25, 0.125, 0.125],
-  ['Multiple family: 2 units', '21', 0.25, 1, 0.5],
-  ['Multiple family: 3 units', '22, 24', 0.25, 2.25, 0.5],
-  ['Multiple family: 4 units', '23', 0.5, 2.25, 0.5],
-  ['Multiple family: 5-12 units', '25', 0.5, 3.5, 1],
-  ['Multiple family: 13-24 units', '26', 0.75, 4, 1.25],
-  ['Multiple family: 25-59 units', '27', 0.75, 4.5, 1.75],
-  ['Multiple family: 60+ units', '28', 1, 5, 2],
-  ['Commercial stores', '31', 1, 2, 1],
-  ['Small grocery stores', '32', 1, 2, 1],
-  ['Office buildings', '33', 1, 1, 1],
-  ['Medical-dental offices', '34', 1, 1, 1],
-  ['Service stations', '35', 1, 2, 1],
-  ['Garages', '36', 1, 0.5, 1],
-  ['Recreational clubs', '37', 1, 4, 1],
-  ['Golf courses', '38', 1, 1, 1],
-  ['Bowling alleys', '39', 1, 4, 1],
-  ['Boat harbors', '40', 1, 3, 1],
-  ['Supermarkets', '41', 1, 6, 1],
-  ['Shopping centers', '42', 5, 10, 5],
-  ['Financial office buildings', '43', 1, 1, 1],
-  ['Hotels, motels, mobile homes', '44', 2, 5, 2],
-  ['Theaters', '45', 2, 2, 2],
-  ['Drive-in restaurants', '46', 1, 3, 1],
-  ['Restaurants', '47', 1, 3, 1],
-  ['Mixed multiple/commercial', '48', 1, 3, 1],
-  ['Auto agency', '49', 1, 3, 1],
-  ['Industrial parks', '51, 52', 1, 3, 1],
-  ['Industrial', '53, 54, 56', 5, 10, 5],
-  ['Warehouses', '55', 1, 3, 1],
-  ['Unassigned (pipeline right-of-way)', '59', 0, 0, 0],
-  ['Convalescent hospitals', '70', 1, 1, 1],
-  ['Churches', '71', 0.5, 1, 0.5],
-  ['Schools', '72', 0.5, 1, 0.5],
-  ['Hospitals', '73', 1, 1, 1],
-  ['Cemeteries, mortuaries', '74', 0.25, 0.5, 0.25],
-  ['Fraternal and service organizations', '75', 1, 2, 1],
-  ['Retirement housing complex', '76', 1, 1, 1],
-  ['Cultural uses', '77', 1, 1, 1],
-  ['Parks and playgrounds', '78', 0, 0, 0],
-  ['Government-owned buildings (business-use part)', '79', 1, 1, 1],
-  ['Vacant land', '10, 15, 17, 18, 20, 30, 50, 60, 62-69', 0.25, 0, 0.25],
-  ['Mineral rights', '80', 0, 0, 0],
-  ['Private roads', '81', 0.125, 0.25, 0.125],
-  ['Pipelines and canals', '82', 0, 0, 0],
-  ['State Board assessed parcels (business-use part)', '83', 1, 1, 1],
-  ['Utilities', '84', 0, 0, 0],
-  ['Parking facilities', '85', 0.5, 1, 1],
-  ['Municipal properties (business-use part)', '86', 1, 1, 1],
-  ['Common areas', '87', 0, 0, 0],
-  ['Mobile homes (land underneath only)', '88', 0, 0, 0],
-  ['Split parcels in different tax-code areas', '89', 0.25, 0.5, 0.25],
-  ['Exempt', '99', 0, 0, 0],
-];
-
-const codeIndex = new Map();
-EDU_SCHEDULE.forEach(([, codes], idx) => {
-  for (const part of codes.split(',').map((s) => s.trim())) {
-    const m = part.match(/^(\d+)(?:-(\d+))?$/);
-    if (!m) continue;
-    const end = m[2] ? Number(m[2]) : Number(m[1]);
-    for (let c = Number(m[1]); c <= end; c++) codeIndex.set(c, idx);
-  }
-});
-
 const classSelect = $('cw-class');
 const tbody = document.querySelector('#cw-table tbody');
 EDU_SCHEDULE.forEach(([name, codes, fi, fp, fs], idx) => {
@@ -630,7 +574,7 @@ $('cw-code').addEventListener('input', () => {
   const raw = $('cw-code').value.trim();
   const status = $('cw-code-status');
   if (!raw) { status.textContent = ''; return; }
-  const idx = /^\d+$/.test(raw) ? codeIndex.get(Number(raw)) : undefined;
+  const idx = /^\d+$/.test(raw) ? EDU_CODE_INDEX.get(Number(raw)) : undefined;
   if (idx === undefined) {
     status.textContent = `No land use type found for code "${raw}".`;
     status.classList.add('error');
@@ -657,3 +601,83 @@ function citywide() {
   tbody.querySelectorAll('tr').forEach((tr) => tr.classList.toggle('selected', Number(tr.dataset.idx) === idx));
 }
 bind('citywide', citywide);
+
+// ---------- Links with the district map ----------
+const PARAM_INPUTS = ['ph-s', 'd3-zone', 'd3-edu', 'd3-u', 'dt-P', 'dt-IP', 'dt-IS', 'dt-IC', 'dt-IT',
+  'dt-R', 'dt-U', 'dt-FS', 'dt-FC', 'dt-FT', 'cw-code'];
+const ROLL_SECTIONS = { 'pine-hollow': 'ph-result', 'district-3': 'd3-result', downtown: 'dt-result' };
+const params = new URLSearchParams(location.search);
+const parcelApn = (params.get('apn') || '').replace(/\D/g, '');
+const apnText = parcelApn.replace(/^(\d{3})(\d{3})(\d{3})$/, '$1-$2-$3');
+
+for (const [sectionId] of [...Object.entries(ROLL_SECTIONS), ['citywide']]) {
+  const head = document.querySelector(`#${sectionId} .district-head`);
+  const link = document.createElement('a');
+  link.className = 'map-link';
+  if (parcelApn) {
+    link.href = `index.html#apn=${parcelApn}`;
+    link.textContent = 'This property on the map';
+  } else if (sectionId === 'citywide') {
+    continue;
+  } else {
+    link.href = `index.html#district=${sectionId}`;
+    link.textContent = 'View on map';
+  }
+  head.append(link);
+}
+
+function applyParams() {
+  for (const id of PARAM_INPUTS) {
+    if (!params.has(id)) continue;
+    const input = $(id);
+    const value = params.get(id);
+    if (input.type === 'checkbox') input.checked = value === '1';
+    else input.value = value;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  for (const id of ['dt-FS', 'dt-FC', 'dt-FT']) {
+    if (params.get(id) === '0') $(id).closest('.field').classList.add('unknown');
+  }
+}
+
+function renderBanner() {
+  const banner = $('parcel-banner');
+  const addr = params.get('addr');
+  banner.innerHTML =
+    `<div><span class="eyebrow">Property from the map</span>` +
+    `<strong>APN ${esc(apnText)}</strong>${addr ? ` <span class="addr">${esc(addr)}</span>` : ''}</div>` +
+    `<p>The inputs below were filled in from the county parcel record. Check them before you trust a result. ` +
+    `Street frontage is not in the record, so the Downtown frontage boxes start at 0 and are marked in orange. ` +
+    `Home size uses today's living area, which can include rooms added later.</p>` +
+    `<div class="banner-actions"><a href="index.html#apn=${esc(parcelApn)}">&larr; Back to this property on the map</a>` +
+    `<a href="assessments.html">Clear property</a></div>`;
+  banner.hidden = false;
+}
+
+async function loadRoll() {
+  try {
+    const response = await fetch('data/districts.json');
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    const entries = data.parcels[parcelApn] || [];
+    for (const [sectionId, resultId] of Object.entries(ROLL_SECTIONS)) {
+      const entry = entries.find((e) => e.d === sectionId);
+      rollNotes[resultId] = entry
+        ? { text: `Official FY ${data.fiscal_year} roll`, amount: entry.a }
+        : { text: `This property is not on the FY ${data.fiscal_year} roll for this district, so it pays $0.00.` };
+    }
+    rollNotes['cw-result'] = { text: 'The city does not publish a Citywide roll by property, so this result cannot be checked.' };
+    for (const sectionId of [...Object.keys(ROLL_SECTIONS), 'citywide']) {
+      $(sectionId).dispatchEvent(new Event('change'));
+    }
+  } catch (error) {
+    console.warn('Could not load the assessment rolls:', error);
+  }
+}
+
+if (parcelApn) {
+  applyParams();
+  renderBanner();
+  loadRoll();
+  if (location.hash) $(location.hash.slice(1))?.scrollIntoView();
+}

@@ -49,7 +49,8 @@ Citywide Street Lighting EDU classification lookup. Which of those inputs
 appear in the map app's parcel records, and how complete they are, is
 documented in [parcel-data-inputs.md](parcel-data-inputs.md). Parcel lists
 from the FY 2026-27 assessment rolls for Pine Hollow, District No. 3 and
-Downtown are in [rolls/](rolls/README.md).
+Downtown are in [rolls/](rolls/README.md), along with approximate district
+and zone outlines built by merging those parcels.
 
 ### Initial report screen
 

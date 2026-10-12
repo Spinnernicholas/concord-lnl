@@ -3,21 +3,27 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Concord Parcel Explorer</title>
+  <title>Concord Assessment District Map</title>
   <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
   <link rel="stylesheet" href="style.css">
   <script defer src="vendor/leaflet/leaflet.js"></script>
+  <script defer src="assessment-schedule.js"></script>
   <script defer src="app.js"></script>
 </head>
 <body>
   <aside class="sidebar">
     <header>
-      <div class="eyebrow">CITY GIS / LOCAL DATA</div>
-      <h1>Concord Parcel Explorer</h1>
-      <p>Explore parcel boundaries, addresses, and property records.</p>
+      <div class="eyebrow">CITY OF CONCORD / FY 2026-27</div>
+      <h1>Assessment District Map</h1>
+      <p>Find a property to see which special assessment districts it is in and what it pays. Then open the calculator to see how the fee is figured.</p>
+      <nav class="tabs" aria-label="Pages">
+        <a class="active" href="index.html" aria-current="page">Map</a>
+        <a href="assessments.html">Calculators</a>
+      </nav>
     </header>
+
     <form id="search-form" role="search">
-      <label for="search">Find a parcel</label>
+      <label for="search">Find a property</label>
       <div class="search-row">
         <input id="search" type="search" placeholder="APN or street address" autocomplete="off" disabled>
         <button id="search-button" type="submit" disabled>Search</button>
@@ -25,28 +31,29 @@
     </form>
     <div id="search-status" role="status" aria-live="polite"></div>
     <ul id="results" aria-label="Search results"></ul>
-    <section id="details" aria-label="Selected parcel">
-      <div class="empty-state">
-        <span class="parcel-icon" aria-hidden="true">&#9633;</span>
-        <h2>A closer look at your city</h2>
-        <p>Zoom in to see parcel boundaries. Select a parcel or search an APN or address to view its records.</p>
-      </div>
+
+    <section id="details" aria-label="Selected property"></section>
+
+    <section id="districts" aria-labelledby="districts-title">
+      <h2 id="districts-title">Assessment districts</h2>
+      <p class="hint">Check a district to show its area and color its properties. Areas are traced from the city's assessment rolls and are close, not official.</p>
+      <ul id="district-list"></ul>
     </section>
+
     <footer>
       <span id="dataset-status">Loading dataset...</span>
-      <p><a href="assessments.html">Special assessment calculators</a> for the four FY 2026-27 districts.</p>
-      <p>Public City of Concord GIS. Includes the entire downloaded parcel layer, not only city-limit parcels. Not a legal survey or certified assessment roll.</p>
-      <p>Basemap tiles require internet access. Parcel records are served by this static site.</p>
+      <p>Amounts come from the FY 2026-27 Engineer's Reports. The Citywide amount is an estimate because its parcel list is not published.</p>
+      <p>Public City of Concord GIS. Not a legal survey or certified assessment roll. Basemap tiles need internet access.</p>
     </footer>
   </aside>
-  <main class="map-panel" aria-label="Interactive parcel map">
+  <main class="map-panel" aria-label="Interactive map">
     <div id="map"></div>
     <div class="map-toolbar">
       <button id="reset-view" type="button">Concord overview</button>
-      <label><input id="show-parcels" type="checkbox" checked> Parcel boundaries</label>
+      <label><input id="show-parcels" type="checkbox" checked> Property lines</label>
     </div>
     <div id="map-status" role="status" aria-live="polite">Loading map...</div>
-    <div class="legend"><span></span> Parcel <span class="selected"></span> Selected</div>
+    <div id="legend" class="legend" aria-label="Map legend"></div>
   </main>
 </body>
 </html>

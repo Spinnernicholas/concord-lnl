@@ -3,11 +3,27 @@
 Read-only collection from the Contra Costa County tax payment portal. Requires
 Python 3.10+; uses only the standard library. No credentials or payments are used.
 
-## Static interactive parcel map
+## Static assessment district map
 
-The Leaflet explorer lives entirely in [public](public/index.html). It provides
-APN/address search, clickable boundaries, satellite/street basemaps, all parcel
-attributes, and a selected-parcel GeoJSON download. No application backend or
+The Leaflet map lives entirely in [public](public/index.html) and is a companion
+to the calculator page. It provides APN/address search, clickable boundaries,
+satellite/street basemaps, all parcel attributes, and a selected-parcel GeoJSON
+download. It also:
+
+- draws approximate outlines for Pine Hollow, District No. 3 (Kirkwood and
+  Ygnacio Woods zones) and Downtown (with optional Todos Santos Plaza,
+  Collector Median and Streetscape zones), with per-district toggles, roll
+  counts and totals, and zoom buttons;
+- colors properties on each district's FY 2026-27 roll;
+- shows a selected property's official roll amounts, a Citywide Street
+  Lighting estimate (`USE_CODE` × EDU × $25, only when `BOUNDARYID` is
+  `Concord`), and the formula inputs found in the record;
+- links to the calculator with those inputs filled in. The calculator shows a
+  property banner and compares each result with the official roll amount.
+  Street frontage is not in the data, so Downtown frontage starts at 0.
+
+Deep links: `index.html#apn=112101025` selects a property and
+`index.html#district=downtown` zooms to a district. No application backend or
 third-party Python/Node packages are needed.
 
 [public/assessments.html](public/assessments.html) is a standalone calculator
@@ -16,7 +32,17 @@ district's formula (native MathML) with hover/tap explanations for every term,
 lists each district's constants in an editable table, and evaluates the
 formula with user-entered parcel values; see [meta-analysis/assessment-functions.md](meta-analysis/assessment-functions.md)
 for the source formulas and [meta-analysis/parcel-data-inputs.md](meta-analysis/parcel-data-inputs.md)
-for which inputs the parcel records contain.
+for which inputs the parcel records contain. The Citywide EDU schedule and the
+parcel-to-input helpers are shared by both pages in
+[public/assessment-schedule.js](public/assessment-schedule.js).
+
+District data for the map comes from `public/data/districts.json`, built from
+the parsed rolls and outlines in [meta-analysis/rolls](meta-analysis/rolls/README.md):
+
+```powershell
+python meta-analysis/build_district_outlines.py   # needs shapely and pyproj
+python meta-analysis/build_district_index.py      # standard library only
+```
 
 After downloading the parcel GeoJSON, build the static data and serve it locally:
 
